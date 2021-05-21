@@ -22,10 +22,11 @@ import (
 )
 
 const (
-	UserAgent      = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36"
-	BingHomeURL    = "https://cn.bing.com"
-	WallPaperURL   = "https://bing.ioliu.cn/?p=1"
-	CurrentPathDir = "images/"
+	UserAgent        = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Edg/90.0.818.66"
+	BingHomeURL      = "https://cn.bing.com"
+	WallPaperURL     = "https://bing.ioliu.cn/?p=1"
+	WallPaperMaxPage = 160
+	CurrentPathDir   = "images/"
 )
 
 // ImageSize 图片大小
@@ -154,8 +155,7 @@ func GetImageSrc(imgSrc string, oldSize, newSize ImageSize) string {
 }
 
 // GetWallPaperList 获取Bing背景图列表
-func GetWallPaperList(page int) (wpList map[string]WallPaper) {
-	wpList = make(map[string]WallPaper, 0)
+func GetWallPaperList(page int) (wpList []WallPaper) {
 	wpURL := WallPaperURL
 	if page > 1 {
 		wpURL = strings.Replace(wpURL, "p=1", fmt.Sprintf("p=%d", page), 1)
@@ -185,7 +185,7 @@ func GetWallPaperList(page int) (wpList map[string]WallPaper) {
 		wp.Title = hq.InnerText(hq.FindOne(desc, "//h3"))
 		cal := hq.FindOne(desc, "//p[@class=\"calendar\"]")
 		wp.Date = hq.InnerText(hq.FindOne(cal, "//em"))
-		wpList[strings.ReplaceAll(wp.Date, "-", "")] = wp
+		wpList = append(wpList, wp)
 	}
 
 	return
@@ -193,10 +193,11 @@ func GetWallPaperList(page int) (wpList map[string]WallPaper) {
 
 // GetWallPaperImage 获取Bing以往的背景图
 func GetWallPaperImage(dayTarget string) string {
-	var wpList map[string]WallPaper
-	for i := 1; i <= 10; i++ {
+	var wpList []WallPaper
+	for i := 1; i <= WallPaperMaxPage; i++ {
 		wpList = GetWallPaperList(i)
-		for dayName, wp := range wpList {
+		for _, wp := range wpList {
+			dayName := strings.ReplaceAll(wp.Date, "-", "")
 			imageURL, imagePath := GetSavePath(dayName, wp.Image, Size1k, false)
 			if imageURL == "" || imagePath == "" {
 				continue
